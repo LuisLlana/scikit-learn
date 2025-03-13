@@ -11,6 +11,9 @@ tree_extension_metadata = {
   '_criterion':
     {'sources': ['_criterion.pyx'],
      'override_options': ['optimization=3']},
+  '_jdj':
+    {'sources': ['_jdj.pyx'],
+     'override_options': ['optimization=3']},
   '_utils':
     {'sources': ['_utils.pyx'],
      'override_options': ['optimization=3']},
