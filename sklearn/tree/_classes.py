@@ -37,7 +37,7 @@ from ..utils.validation import (
     check_is_fitted,
     validate_data,
 )
-from . import _criterion, _splitter, _tree
+from . import _criterion, _splitter, _tree, _jdj
 from ._criterion import Criterion
 from ._splitter import Splitter
 from ._tree import (
@@ -68,6 +68,7 @@ CRITERIA_CLF = {
     "gini": _criterion.Gini,
     "log_loss": _criterion.Entropy,
     "entropy": _criterion.Entropy,
+    "jdj": _jdj.JDJ,
 }
 CRITERIA_REG = {
     "squared_error": _criterion.MSE,
@@ -708,7 +709,7 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
 
     Parameters
     ----------
-    criterion : {"gini", "entropy", "log_loss"}, default="gini"
+    criterion : {"gini", "entropy", "log_loss", "jdj"}, default="gini"
         The function to measure the quality of a split. Supported criteria are
         "gini" for the Gini impurity and "log_loss" and "entropy" both for the
         Shannon information gain, see :ref:`tree_mathematical_formulation`.
@@ -953,7 +954,7 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
 
     _parameter_constraints: dict = {
         **BaseDecisionTree._parameter_constraints,
-        "criterion": [StrOptions({"gini", "entropy", "log_loss"}), Hidden(Criterion)],
+        "criterion": [StrOptions({"gini", "entropy", "log_loss", "jdj"}), Hidden(Criterion)],
         "class_weight": [dict, list, StrOptions({"balanced"}), None],
     }
 
@@ -1102,6 +1103,7 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
             "gini",
             "log_loss",
             "entropy",
+            "jdj"
         }
         tags.classifier_tags.multi_label = True
         tags.input_tags.allow_nan = allow_nan
@@ -1466,7 +1468,7 @@ class ExtraTreeClassifier(DecisionTreeClassifier):
 
     Parameters
     ----------
-    criterion : {"gini", "entropy", "log_loss"}, default="gini"
+    criterion : {"gini", "entropy", "log_loss", "jdj"}, default="gini"
         The function to measure the quality of a split. Supported criteria are
         "gini" for the Gini impurity and "log_loss" and "entropy" both for the
         Shannon information gain, see :ref:`tree_mathematical_formulation`.
@@ -1733,6 +1735,7 @@ class ExtraTreeClassifier(DecisionTreeClassifier):
             "gini",
             "log_loss",
             "entropy",
+            "jdj"
         }
         tags.classifier_tags.multi_label = True
         tags.input_tags.allow_nan = allow_nan

@@ -64,7 +64,7 @@ from sklearn.utils.fixes import (
 )
 from sklearn.utils.validation import check_random_state
 
-CLF_CRITERIONS = ("gini", "log_loss")
+CLF_CRITERIONS = ("gini", "log_loss", "jdj")
 REG_CRITERIONS = ("squared_error", "absolute_error", "friedman_mse", "poisson")
 
 CLF_TREES = {
@@ -2421,7 +2421,7 @@ def test_missing_values_random_splitter_on_equal_nodes_no_missing(criterion, see
         assert_allclose(y_pred_right, y_pred)
 
 
-@pytest.mark.parametrize("criterion", ["entropy", "gini"])
+@pytest.mark.parametrize("criterion", ["entropy", "gini", "jdj"])
 def test_missing_values_best_splitter_three_classes(criterion):
     """Test when missing values are uniquely present in a class among 3 classes."""
     missing_values_class = 0
