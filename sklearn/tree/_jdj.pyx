@@ -1,4 +1,12 @@
-from ._criterion cimport ClassificationCriterion, float64_t, intp_t
+import numpy as np
+cimport numpy as cnp
+from numpy cimport float64_t, intp_t
+from libc.stdio cimport printf
+
+
+cnp.import_array()
+
+from ._criterion cimport ClassificationCriterion
 
 cdef class JDJ(ClassificationCriterion):
     r"""JDJ Index polarization criterion.
@@ -9,9 +17,7 @@ cdef class JDJ(ClassificationCriterion):
 
         count_k = 1/ Nm \sum_{x_i in Rm} I(yi = k)
 
-    be the proportion of class k observations in node m.
-
-    The Gini Index is then defined as:
+    The JDJ Index is defined as:
 
         index = \sum_{k=0}^{K-1} count_k (1 - count_k)
               = 1 - \sum_{k=0}^{K-1} count_k ** 2
@@ -30,15 +36,19 @@ cdef class JDJ(ClassificationCriterion):
         cdef intp_t k
         cdef intp_t c
 
+        printf("c1:%d:\n", self.n_outputs)
         for k in range(self.n_outputs):
             sq_count = 0.0
-
+            printf("c1.1:%d:\n", self.n_classes[k])
             for c in range(self.n_classes[k]):
                 count_k = self.sum_total[k, c]
+                printf("c1.3:%d:%d:\n", count_k, self.sum_total[k, c])
                 sq_count += count_k * count_k
 
             gini += 1.0 - sq_count / (self.weighted_n_node_samples *
-                                      self.weighted_n_node_samples)
+
+                                                  self.weighted_n_node_samples)
+        printf("c1.4:%f:\n", gini / self.n_outputs)
 
         return gini / self.n_outputs
 
@@ -64,14 +74,18 @@ cdef class JDJ(ClassificationCriterion):
         cdef intp_t k
         cdef intp_t c
 
+        printf("c2:%d:\n", self.n_outputs)
         for k in range(self.n_outputs):
             sq_count_left = 0.0
             sq_count_right = 0.0
 
+            printf("c2.1:%d:\n", self.n_classes[k])
             for c in range(self.n_classes[k]):
                 count_k = self.sum_left[k, c]
                 sq_count_left += count_k * count_k
-
+                printf("c2.3:%d:%d:\n",
+                       self.sum_left[k, c],
+                       self.sum_right[k, c])
                 count_k = self.sum_right[k, c]
                 sq_count_right += count_k * count_k
 
@@ -83,3 +97,4 @@ cdef class JDJ(ClassificationCriterion):
 
         impurity_left[0] = gini_left / self.n_outputs
         impurity_right[0] = gini_right / self.n_outputs
+        printf("c2.4:%f:%f:\n", impurity_left[0], impurity_right[0])
