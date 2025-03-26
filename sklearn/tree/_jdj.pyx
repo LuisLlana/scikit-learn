@@ -1,5 +1,9 @@
 from libc.stdio cimport printf, stdout, setbuf
 from ._criterion cimport ClassificationCriterion, float64_t, intp_t
+import numpy as np
+cimport numpy as cnp
+cnp.import_array()
+
 
 cdef class JDJ(ClassificationCriterion):
 
@@ -12,13 +16,22 @@ cdef class JDJ(ClassificationCriterion):
         count_k = 1/ Nm \sum_{x_i in Rm} I(yi = k)
 
     """
-    cdef int table_size
-
+    cdef cnp.ndarray table
     def __cinit__(self, *args):
+        printf("JDJ __cinit__ v1\n")
+        self.table = np.zeros((self.n_classes[0], self.n_classes[0]), dtype=np.float64)
+        cdef cnp.ndarray pol_A= np.linspace(0, 1, self.n_classes[0], dtype=np.float64)
+        cdef cnp.ndarray pol_B= np.linspace(1, 0, self.n_classes[0], dtype=np.float64)
+        for i in range(self.n_classes[0]):
+            for j in range(self.n_classes[0]):
+                v = max(pol_A[i]*pol_B[j], pol_B[i]*pol_B[j])
+                self.table[i, j] = v
+                print(f'{self.table[i, j]}', end=' ')
+            print()
         setbuf(stdout, NULL)
-        printf("JDJ __cinit__\n")
-        self.table_size = 0
-        print(f"JDJ {self.n_classes[0]}, {self.table_size}")
+
+
+
 
     cdef float64_t node_impurity(self) noexcept nogil:
         """Evaluate the impurity of the current node.
