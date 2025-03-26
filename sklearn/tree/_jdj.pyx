@@ -1,4 +1,4 @@
-from libc.stdio cimport printf
+from libc.stdio cimport printf, stdout, setbuf
 from ._criterion cimport ClassificationCriterion, float64_t, intp_t
 
 cdef class JDJ(ClassificationCriterion):
@@ -12,17 +12,13 @@ cdef class JDJ(ClassificationCriterion):
         count_k = 1/ Nm \sum_{x_i in Rm} I(yi = k)
 
     """
-    cdef int init(
-        self,
-        const float64_t[:, ::1] y,
-        const float64_t[:] sample_weight,
-        float64_t weighted_n_samples,
-        const intp_t[:] sample_indices,
-        intp_t start,
-        intp_t end
-    ) except -1 nogil:
-        cdef int res = super.init(y, sample_weight, weighted_n_samples, sample_indices, start, end)
-        return res
+    cdef int table_size
+
+    def __cinit__(self, *args):
+        setbuf(stdout, NULL)
+        printf("JDJ __cinit__\n")
+        self.table_size = 0
+        printf("JDJ %d, %d\n", self.n_classes, self.table_size)
 
     cdef float64_t node_impurity(self) noexcept nogil:
         """Evaluate the impurity of the current node.
