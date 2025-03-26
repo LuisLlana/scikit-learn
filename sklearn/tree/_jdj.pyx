@@ -14,22 +14,29 @@ cdef class JDJ(ClassificationCriterion):
     then let
 
         count_k = 1/ Nm \sum_{x_i in Rm} I(yi = k)
-
+        count_[k1, k2] =
     """
     cdef cnp.ndarray table
     def __cinit__(self, *args):
         printf("JDJ __cinit__ v1\n")
-        self.table = np.zeros((self.n_classes[0], self.n_classes[0]), dtype=np.float64)
-        cdef cnp.ndarray pol_A= np.linspace(0, 1, self.n_classes[0], dtype=np.float64)
-        cdef cnp.ndarray pol_B= np.linspace(1, 0, self.n_classes[0], dtype=np.float64)
-        for i in range(self.n_classes[0]):
-            for j in range(self.n_classes[0]):
-                v = max(pol_A[i]*pol_B[j], pol_B[i]*pol_B[j])
+        size = self.n_classes[0]
+        self.table = np.zeros((size, size), dtype=np.float64)
+        cdef cnp.ndarray pol_A= np.linspace(0, 1, size, dtype=np.float64)
+        cdef cnp.ndarray pol_B= np.linspace(1, 0, size, dtype=np.float64)
+        for i in range(size):
+            for j in range(size):
+                v = max(pol_A[i]*pol_B[j], pol_B[i]*pol_A[j])
                 self.table[i, j] = v
-                print(f'{self.table[i, j]}', end=' ')
-            print()
-        setbuf(stdout, NULL)
-
+                #print(f'{self.table[i, j]}', end=' ')
+            #print()
+        #setbuf(stdout, NULL)
+        n_classes = self.max_n_classes
+        self.sum_total = np.zeros((n_outputs, n_classes, n_classes),
+                                  dtype=np.float64)
+        self.sum_left = np.zeros((n_outputs, n_classes, n_classes),
+                                 dtype=np.float64)
+        self.sum_right = np.zeros((n_outputs, n_classes, n_classes),
+                                  dtype=np.float
 
 
 
