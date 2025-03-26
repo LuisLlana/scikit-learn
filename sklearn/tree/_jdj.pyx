@@ -18,7 +18,7 @@ cdef class JDJ(ClassificationCriterion):
         setbuf(stdout, NULL)
         printf("JDJ __cinit__\n")
         self.table_size = 0
-        printf("JDJ %d, %d\n", self.n_classes, self.table_size)
+        print(f"JDJ {self.n_classes[0]}, {self.table_size}")
 
     cdef float64_t node_impurity(self) noexcept nogil:
         """Evaluate the impurity of the current node.
