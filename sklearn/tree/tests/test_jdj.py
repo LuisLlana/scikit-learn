@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils._testing import assert_array_equal
 
-@pytest.mark.parametrize("criterion", ["jdj"])
+@pytest.mark.parametrize("criterion", ["gini", "jdj"])
 def test_missing_values_best_splitter_three_classes(criterion):
     """Test when missing values are uniquely present in a class among 3 classes."""
     missing_values_class = 0

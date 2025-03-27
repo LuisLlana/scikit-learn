@@ -358,6 +358,14 @@ cdef class JDJ(Criterion):
                     self.sum_right[k, c1, c2] = self.sum_total[k, c1, c2] - self.sum_left[k, c1, c2]
 
         self.pos = new_pos
+        for k in range(self.n_outputs):
+            for c1 in range(self.n_classes[k]):
+                for c2 in range(self.n_classes[k]):
+                    printf('update %f,%f,%f,%f\n',
+                           self.sum_left[k, c1, c2],
+                           self.sum_right[k, c1, c2],
+                           self.sum_left[k, c1, c2] + self.sum_right[k, c1, c2],
+                           self.sum_total[k, c1, c2])
         return 0
 
     cdef float64_t node_impurity(self) noexcept nogil:
@@ -416,6 +424,8 @@ cdef class JDJ(Criterion):
                     partial += self.sum_right[c, c1, c2] * self.pol_table[c1, c2]
                 jdj_right += partial
         jdj_right /= (self.weighted_n_left * self.n_outputs)
+        printf("jdj_left: %f, jdj_right: %f\n", jdj_left, jdj_right)
+
 
         impurity_left[0] = jdj_left
         impurity_right[0] = jdj_right
