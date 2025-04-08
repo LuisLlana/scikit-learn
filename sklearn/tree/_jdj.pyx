@@ -2,6 +2,8 @@ from libc.string cimport memcpy
 from libc.string cimport memset
 from libc.math cimport fabs, INFINITY
 from libc.stdio cimport printf, stdout, setbuf
+from libc.stdio cimport printf, stdout, setbuf
+from ._criterion cimport ClassificationCriterion, float64_t, intp_t
 
 import numpy as np
 cimport numpy as cnp
