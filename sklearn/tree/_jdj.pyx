@@ -32,7 +32,7 @@ cdef inline void _move_sums_classification_jdj(
     cdef intp_t k, c1, c2, n_bytes
     if criterion.n_missing != 0 and put_missing_in_1:
         for k in range(criterion.n_outputs):
-            n_bytes = criterion.n_classes[k] * sizeof(float64_t)
+            n_bytes = criterion.n_classes[k]**2 * sizeof(float64_t)
             memcpy(&sum_1[k, 0, 0], &criterion.sum_missing[k, 0, 0], n_bytes)
 
         for k in range(criterion.n_outputs):
@@ -45,7 +45,7 @@ cdef inline void _move_sums_classification_jdj(
     else:
         # Assigning sum_2 = sum_total for all outputs.
         for k in range(criterion.n_outputs):
-            n_bytes = criterion.n_classes[k] * sizeof(float64_t)
+            n_bytes = criterion.n_classes[k]**2 * sizeof(float64_t)
             memset(&sum_1[k, 0, 0], 0, n_bytes)
             memcpy(&sum_2[k, 0, 0], &criterion.sum_total[k, 0, 0], n_bytes)
 
@@ -111,8 +111,8 @@ cdef class JDJ(Criterion):
             for j in range(max_n_classes):
                 v = max(pol_A[i]*pol_B[j], pol_B[i]*pol_A[j])
                 self.pol_table[i, j] = v
-                #print(f'{self.table[i, j]}', end=' ')
-            #print()
+                print(f'{self.pol_table[i, j]}', end=' ')
+            print()
         #setbuf(stdout, NULL)
         self.sum_total = np.zeros((n_outputs, max_n_classes, max_n_classes),
                                   dtype=np.float64)
@@ -165,7 +165,7 @@ cdef class JDJ(Criterion):
         self.start = start
         self.end = end
         self.n_node_samples = end - start
-        self.weighted_n_samples = weighted_n_samples
+        self.weighted_n_samples = weighted_n_samples ** 2
         self.weighted_n_node_samples = 0.0
 
         cdef intp_t i, j
@@ -174,6 +174,7 @@ cdef class JDJ(Criterion):
         cdef intp_t c1, c2
         cdef float64_t w = 1.0
 
+        printf("JDJ init: start: %d end: %d, wieight: %f\n", start, end, weighted_n_samples)
         for k in range(self.n_outputs):
             memset(&self.sum_total[k, 0, 0], 0, self.n_classes[k]**2 * sizeof(float64_t))
 
@@ -196,6 +197,7 @@ cdef class JDJ(Criterion):
                     c1 = <intp_t> self.y[i, k]
                     c2 = <intp_t> self.y[j, k]
                     self.sum_total[k, c1, c2] += w
+                    # printf("init: %d %d %d %f\n", k, c1, c2, self.sum_total[k, c1, c2])
 
                 self.weighted_n_node_samples += w
 
@@ -297,6 +299,8 @@ cdef class JDJ(Criterion):
         # self.sample_indices[end_non_missing:self.end].
         cdef intp_t end_non_missing = self.end - self.n_missing
 
+        # printf("JDJ update self.pos: %d seld.end: %d self.n_missing: %d\n",
+        #        self.pos, self.end, self.n_missing)
         cdef const intp_t[:] sample_indices = self.sample_indices
         cdef const float64_t[:] sample_weight = self.sample_weight
 
@@ -323,6 +327,7 @@ cdef class JDJ(Criterion):
                         # Consultar esto de nuevo
                         #
                         w = sample_weight[i] * sample_weight[j]
+                        printf("c1: sample_weight is not none\n")
 
                     for k in range(self.n_outputs):
                         self.sum_left[k, <intp_t> self.y[i, k],
@@ -334,7 +339,7 @@ cdef class JDJ(Criterion):
             self.reverse_reset()
 
             for p in range(end_non_missing - 1, new_pos - 1, -1):
-                for q in range(pos, new_pos):
+                for q in range(end_non_missing - 1, new_pos - 1, -1):
                     i = sample_indices[p]
                     j = sample_indices[q]
 
@@ -346,9 +351,9 @@ cdef class JDJ(Criterion):
 
                     for k in range(self.n_outputs):
                         self.sum_left[k, <intp_t> self.y[i, k],
-                                      <intp_t> self.y[j, k]] += w
+                                      <intp_t> self.y[j, k]] -= w
 
-                    self.weighted_n_left += w
+                    self.weighted_n_left -= w
 
         # Update right part statistics
         self.weighted_n_right = self.weighted_n_node_samples - self.weighted_n_left
@@ -356,16 +361,9 @@ cdef class JDJ(Criterion):
             for c1 in range(self.n_classes[k]):
                 for c2 in range(self.n_classes[k]):
                     self.sum_right[k, c1, c2] = self.sum_total[k, c1, c2] - self.sum_left[k, c1, c2]
+                    #printf("update: %d %d %d %f %f\n", k, c1, c2, self.sum_right[k, c1, c2], self.sum_left[k, c1, c2], self.sum_total[k, c1, c2])
 
         self.pos = new_pos
-        for k in range(self.n_outputs):
-            for c1 in range(self.n_classes[k]):
-                for c2 in range(self.n_classes[k]):
-                    printf('update %f,%f,%f,%f\n',
-                           self.sum_left[k, c1, c2],
-                           self.sum_right[k, c1, c2],
-                           self.sum_left[k, c1, c2] + self.sum_right[k, c1, c2],
-                           self.sum_total[k, c1, c2])
         return 0
 
     cdef float64_t node_impurity(self) noexcept nogil:
@@ -378,16 +376,17 @@ cdef class JDJ(Criterion):
         cdef intp_t k, c1, c2
 
         jdj = 0.0
-        for c in range(self.n_outputs):
-            for c1 in range(self.n_classes[c]):
+        for k in range(self.n_outputs):
+            for c1 in range(self.n_classes[k]):
                 partial = 0.0
-                for c2 in range(self.n_classes[c]):
-                    partial += self.sum_total[c, c1, c2] * self.pol_table[c1, c2]
-                    printf("%f, %f, %f\n",self.sum_total[c, c1, c2], self.pol_table[c1, c2], partial)
+                for c2 in range(self.n_classes[k]):
+                    partial += self.sum_total[k, c1, c2] * self.pol_table[c1, c2]
+                    printf("%d %d %f, %f, %f\n",c1, c2, self.sum_total[k, c1, c2], self.pol_table[c1, c2], partial)
                 jdj += partial
         ##
         ## Si los pesos son 1, self.weighted_n_node_samples es el número de entradas en la tabla
         jdj /= (self.weighted_n_node_samples * self.n_outputs)
+        printf('jdj global: %f\n ', jdj)
         return jdj
 
     cdef void children_impurity(self, float64_t* impurity_left,
@@ -404,27 +403,43 @@ cdef class JDJ(Criterion):
         impurity_right : float64_t pointer
             The memory address to save the impurity of the right node to
         """
-        cdef float64_t jdj_left, jdj_right, partial
+        cdef float64_t jdj_left, jdj_right, partial, p1
         cdef intp_t k, c1, c2
 
         jdj_left = 0.0
-        for c in range(self.n_outputs):
-            for c1 in range(self.n_classes[c]):
+        for k in range(self.n_outputs):
+            p1 = 0.0
+            for c1 in range(self.n_classes[k]):
                 partial = 0.0
-                for c2 in range(self.n_classes[c]):
-                    partial += self.sum_left[c, c1, c2] * self.pol_table[c1, c2]
+                for c2 in range(self.n_classes[k]):
+                    p1 += self.sum_left[k, c1, c2]
+                    partial += self.sum_left[k, c1, c2] * self.pol_table[c1, c2]
+                    #printf("left: %d %d %f, %f, %f\n",c1, c2, self.sum_left[k, c1, c2], self.pol_table[c1, c2], partial)
                 jdj_left += partial
         jdj_left /= (self.weighted_n_left / self.n_outputs)
+        if p1!=self.weighted_n_left:
+            raise Exception(f'p1: {p1} != self.weighted_n_left: {self.weighted_n_left}')
+        #printf('jdj left: %f p1:%f w:%f\n ', jdj_left, p1, self.weighted_n_left)
+        if jdj_left < 0 or jdj_left > 1:
+            raise Exception(f'jdj_left: {jdj_left} p1:{p1} w:{self.weighted_n_left}')
+
 
         jdj_right = 0.0
-        for c in range(self.n_outputs):
-            for c1 in range(self.n_classes[c]):
+        for k in range(self.n_outputs):
+            p1 = 0.0
+            for c1 in range(self.n_classes[k]):
                 partial = 0.0
-                for c2 in range(self.n_classes[c]):
-                    partial += self.sum_right[c, c1, c2] * self.pol_table[c1, c2]
+                for c2 in range(self.n_classes[k]):
+                    p1 += self.sum_right[k, c1, c2]
+                    partial += self.sum_right[k, c1, c2] * self.pol_table[c1, c2]
+                    #printf("right: %d %d %f, %f, %f\n",c1, c2, self.sum_right[k, c1, c2], self.pol_table[c1, c2], partial)
                 jdj_right += partial
-        jdj_right /= (self.weighted_n_left * self.n_outputs)
-        printf("jdj_left: %f, jdj_right: %f\n", jdj_left, jdj_right)
+        jdj_right /= (self.weighted_n_right * self.n_outputs)
+        if p1!=self.weighted_n_right:
+            raise Exception(f'p1: {p1} != self.weighted_n_right: {self.weighted_n_right}')
+        else:
+            printf('OK')
+        #printf("jdj_right: %f p1:%f w:%f\n", jdj_right, p1, self.weighted_n_right)
 
 
         impurity_left[0] = jdj_left
@@ -447,7 +462,8 @@ cdef class JDJ(Criterion):
                 for c2 in range(self.n_classes[k]):
                     #
                     # Consultar esto: no sé como caclular esto
-                    dest[c1] = self.sum_total[k, c1, c2] / self.weighted_n_node_samples
+                    dest[c1] += self.sum_total[k, c1, c2]
+                dest[c1] /= self.weighted_n_node_samples
             #
             # Esto se hace por cada output, es como su hubera una lista de listas
             dest += self.max_n_classes
