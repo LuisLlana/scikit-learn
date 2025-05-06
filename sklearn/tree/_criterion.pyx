@@ -4,6 +4,7 @@
 from libc.string cimport memcpy
 from libc.string cimport memset
 from libc.math cimport fabs, INFINITY
+from libc.stdio cimport printf, stdout, setbuf
 
 import numpy as np
 cimport numpy as cnp
